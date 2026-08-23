@@ -10,10 +10,10 @@ def init():
     os.makedirs(f"{GIT_DIR}/objects")
 
 
-ObjectType = Literal["blob"]
+ObjectType = Literal["blob", "tree"]
 
 
-def hash_object(data: bytes, type_: ObjectType = "blob") -> str:
+def hash_object(data: bytes, type_: ObjectType) -> str:
     obj = type_.encode() + b"\x00" + data
     oid = hashlib.sha1(obj).hexdigest()
     with open(f"{GIT_DIR}/objects/{oid}", "wb") as out:
@@ -21,7 +21,7 @@ def hash_object(data: bytes, type_: ObjectType = "blob") -> str:
     return oid
 
 
-def get_object(oid: str, expected: Optional[ObjectType] = "blob") -> bytes:
+def get_object(oid: str, expected: Optional[ObjectType]) -> bytes:
     with open(f"{GIT_DIR}/objects/{oid}", "rb") as f:
         obj = f.read()
 
