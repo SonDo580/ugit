@@ -1,4 +1,7 @@
 import argparse
+import os
+
+from . import data
 
 
 def main():
@@ -19,4 +22,5 @@ def parse_args() -> argparse.Namespace:
 
 
 def init(args: argparse.Namespace):
-    print("Hello world")
+    data.init()
+    print(f"Initialized empty ugit repository in {os.getcwd()}/{data.GIT_DIR}")
