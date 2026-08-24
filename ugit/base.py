@@ -1,5 +1,7 @@
 import os
-from typing import Iterator
+from typing import Iterator, NamedTuple, Optional
+import itertools
+import operator
 
 from . import data
 
@@ -94,6 +96,29 @@ def commit(message: str) -> str:
 
     return oid
 
+class Commit(NamedTuple):
+    tree: str
+    parent: Optional[str]
+    message: str
+
+def get_commit(oid: str) -> Commit:
+    parent: Optional[str] = None
+    commit = data.get_object(oid, "commit").decode()
+    lines = iter(commit.splitlines())
+
+    # stop at the blank line and consume it
+    for line in itertools.takewhile(operator.truth, lines):
+        key, value = line.split(" ", 1)
+        if key == "tree":
+            tree = value
+        elif key == "parent":
+            parent = value
+        else:
+            assert False, f"Unknown field {key}"
+
+    message = "\n".join(lines) # remaining lines
+    assert isinstance(tree, str)
+    return Commit(tree=tree, parent=parent, message=message)
 
 def is_ignored(path: str) -> bool:
     return ".ugit" in path.split("/")
