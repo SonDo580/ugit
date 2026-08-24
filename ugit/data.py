@@ -10,7 +10,18 @@ def init():
     os.makedirs(f"{GIT_DIR}/objects")
 
 
-ObjectType = Literal["blob", "tree"]
+def set_HEAD(oid: str):
+    with open(f"{GIT_DIR}/HEAD", "w") as f:
+        f.write(oid)
+
+
+def get_HEAD():
+    if os.path.isfile(f"{GIT_DIR}/HEAD"):
+        with open(f"{GIT_DIR}/HEAD") as f:
+            return f.read().strip()
+
+
+ObjectType = Literal["blob", "tree", "commit"]
 
 
 def hash_object(data: bytes, type_: ObjectType) -> str:
