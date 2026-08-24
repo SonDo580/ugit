@@ -96,10 +96,18 @@ def commit(message: str) -> str:
 
     return oid
 
+
+def checkout(oid: str):
+    commit = get_commit(oid)
+    read_tree(commit.tree)
+    data.set_HEAD(oid)
+
+
 class Commit(NamedTuple):
     tree: str
     parent: Optional[str]
     message: str
+
 
 def get_commit(oid: str) -> Commit:
     parent: Optional[str] = None
@@ -116,9 +124,10 @@ def get_commit(oid: str) -> Commit:
         else:
             assert False, f"Unknown field {key}"
 
-    message = "\n".join(lines) # remaining lines
+    message = "\n".join(lines)  # remaining lines
     assert isinstance(tree, str)
     return Commit(tree=tree, parent=parent, message=message)
+
 
 def is_ignored(path: str) -> bool:
     return ".ugit" in path.split("/")
