@@ -135,17 +135,20 @@ def get_commit(oid: str) -> Commit:
 
 
 def iter_commits_and_parent(oids: set[str]) -> Iterator[str]:
+    stack = list(oids)
     visited: set[str] = set()
-    while oids:
-        oid = oids.pop()
-        if not oid or oid in visited:
+
+    while stack:
+        oid = stack.pop()
+        if oid in visited:
             continue
 
         visited.add(oid)
         yield oid
 
         commit = get_commit(oid)
-        oids.add(commit.parent)
+        if commit.parent:
+            stack.append(commit.parent)
 
 
 def get_oid(name: str) -> str:

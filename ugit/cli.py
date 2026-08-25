@@ -90,13 +90,11 @@ def commit(args: argparse.Namespace):
 
 
 def log(args: argparse.Namespace):
-    oid = args.oid
-    while oid:
+    for oid in base.iter_commits_and_parent({args.oid}):
         commit = base.get_commit(oid)
         print(f"commit {oid}\n")
         print(textwrap.indent(commit.message, " " * 4))
         print()
-        oid = commit.parent
 
 
 def checkout(args: argparse.Namespace):
@@ -110,7 +108,7 @@ def tag(args: argparse.Namespace):
 def k(args: argparse.Namespace):
     dot = "digraph commits {\n"
 
-    oids: set[str] = set()
+    oids: set[str] = set()  # multiple refs can point to the same commit
     for refname, ref in data.iter_refs():
         dot += f'"{refname}" [shape=note]\n'
         dot += f'"{refname}" -> "{ref}"\n'
