@@ -53,6 +53,10 @@ def parse_args() -> argparse.Namespace:
     show_parser.set_defaults(func=show)
     show_parser.add_argument("oid", default="@", type=oid, nargs="?")
 
+    diff_parser = commands.add_parser("diff")
+    diff_parser.set_defaults(func=_diff)
+    diff_parser.add_argument("commit", default="@", type=oid, nargs="?")
+
     checkout_parser = commands.add_parser("checkout")
     checkout_parser.set_defaults(func=checkout)
     checkout_parser.add_argument("commit")
@@ -134,6 +138,13 @@ def show(args):
 
     _print_commit(args.oid, commit)
     result = diff.diff_trees(base.get_tree(parent_tree), base.get_tree(commit.tree))
+    sys.stdout.flush()
+    sys.stdout.buffer.write(result)
+
+
+def _diff(args):
+    tree = base.get_commit(args.commit).tree
+    result = diff.diff_trees(base.get_tree(tree), base.get_working_tree())
     sys.stdout.flush()
     sys.stdout.buffer.write(result)
 

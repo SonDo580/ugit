@@ -64,6 +64,17 @@ def get_tree(oid: Optional[str], base_path: str = "") -> dict[str, str]:
     return result
 
 
+def get_working_tree() -> dict[str, str]:
+    result: dict[str, str] = {}
+    for root, _, filenames in os.walk("."):
+        for filename in filenames:
+            path = os.path.relpath(f"{root}/{filename}")
+            if is_ignored(path) or not os.path.isfile(path):
+                continue
+            with open(path, 'rb') as f:
+                result[path] = data.hash_object(f.read(), "blob")
+    return result
+
 def _empty_current_directory():
     for root, dirnames, filenames in os.walk(".", topdown=False):
         for filename in filenames:

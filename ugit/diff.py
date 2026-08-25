@@ -25,7 +25,7 @@ def diff_trees(t_from: dict[str, str], t_to: dict[str, str]) -> bytes:
     output = b""
     for path, o_from, o_to in compare_trees(t_from, t_to):
         if o_from != o_to:
-            output += diff_blobs(o_from, o_to)
+            output += diff_blobs(o_from, o_to, path)
     return output
 
 
