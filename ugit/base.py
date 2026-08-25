@@ -7,6 +7,11 @@ import string
 from . import data
 
 
+def init():
+    data.init()
+    data.update_ref("HEAD", data.RefValue(symbolic=True, value="refs/heads/master"))
+
+
 def write_tree(directory: str = ".") -> str:
     entries: list[tuple[str, str, data.ObjectType]] = []
 

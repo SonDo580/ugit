@@ -68,7 +68,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def init(args: argparse.Namespace):
-    data.init()
+    base.init()
     print(f"Initialized empty ugit repository in {os.getcwd()}/{data.GIT_DIR}")
 
 
