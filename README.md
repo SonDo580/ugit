@@ -11,4 +11,8 @@ https://www.leshenko.net/p/ugit/
 ```bash
 # Install 'ugit' as an editable package
 pip install -e . --user
+
+# Install 'graphviz'
+# (example on Ubuntu)
+sudo apt install graphviz
 ```
