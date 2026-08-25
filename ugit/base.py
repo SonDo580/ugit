@@ -127,6 +127,15 @@ def is_branch(branch: str) -> bool:
     return data.get_ref(f"refs/heads/{branch}").value is not None
 
 
+def get_branch_name() -> Optional[str]:
+    HEAD = data.get_ref("HEAD", deref=False)
+    if not HEAD.symbolic:
+        return None
+    HEAD = HEAD.value
+    assert HEAD.startswith("refs/heads/")
+    return os.path.relpath(HEAD, "refs/heads/")
+
+
 class Commit(NamedTuple):
     tree: str
     parent: Optional[str]
