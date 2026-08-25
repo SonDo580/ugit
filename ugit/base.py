@@ -2,6 +2,7 @@ import os
 from typing import Iterator, NamedTuple, Optional
 import itertools
 import operator
+import string
 
 from . import data
 
@@ -134,7 +135,21 @@ def get_commit(oid: str) -> Commit:
 
 
 def get_oid(name: str) -> str:
-    return data.get_ref(name) or name
+    # Name is ref
+    refs_to_try = [
+        f"{name}" f"refs/{name}",
+        f"refs/tags/{name}",
+        f"refs/heads/{name}",
+    ]
+    for ref in refs_to_try:
+        if data.get_ref(ref):
+            return data.get_ref(ref)
+
+    # Name is SHA1
+    if len(name) == 40 and all(c in string.hexdigits for c in name):
+        return name
+
+    assert False, f"Unknown name '{name}'"
 
 
 def is_ignored(path: str) -> bool:
