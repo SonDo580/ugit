@@ -46,7 +46,10 @@ def _iter_tree_entries(oid: str) -> Iterator[tuple[data.ObjectType, str, str]]:
         yield type_, oid, name
 
 
-def get_tree(oid: str, base_path: str) -> dict[str, str]:
+def get_tree(oid: Optional[str], base_path: str = "") -> dict[str, str]:
+    if not oid:
+        return {}
+
     result: dict[str, str] = {}
     for type_, oid, name in _iter_tree_entries(oid):
         assert "/" not in name
