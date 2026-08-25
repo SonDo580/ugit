@@ -107,6 +107,8 @@ def checkout(oid: str):
 def create_tag(name: str, oid: str):
     data.update_ref(f"refs/tags/{name}", oid)
 
+def create_branch(name: str, oid: str):
+    data.update_ref(f"refs/heads/{name}", oid)
 
 class Commit(NamedTuple):
     tree: str
