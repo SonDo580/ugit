@@ -85,7 +85,7 @@ def read_tree(tree_oid: str):
 def commit(message: str) -> str:
     commit = f"tree {write_tree()}\n"
 
-    HEAD = data.get_ref("HEAD")
+    HEAD = data.get_ref("HEAD").value
     if HEAD:
         commit += f"parent {HEAD}\n"
 
@@ -93,7 +93,7 @@ def commit(message: str) -> str:
     commit += f"{message}\n"
 
     oid = data.hash_object(commit.encode(), "commit")
-    data.update_ref("HEAD", oid)
+    data.update_ref("HEAD", data.RefValue(symbolic=False, value=oid))
 
     return oid
 
@@ -101,14 +101,16 @@ def commit(message: str) -> str:
 def checkout(oid: str):
     commit = get_commit(oid)
     read_tree(commit.tree)
-    data.update_ref("HEAD", oid)
+    data.update_ref("HEAD", data.RefValue(symbolic=False, value=oid))
 
 
 def create_tag(name: str, oid: str):
-    data.update_ref(f"refs/tags/{name}", oid)
+    data.update_ref(f"refs/tags/{name}", data.RefValue(symbolic=False, value=oid))
+
 
 def create_branch(name: str, oid: str):
-    data.update_ref(f"refs/heads/{name}", oid)
+    data.update_ref(f"refs/heads/{name}", data.RefValue(symbolic=False, value=oid))
+
 
 class Commit(NamedTuple):
     tree: str
@@ -165,8 +167,8 @@ def get_oid(name: str) -> str:
         f"refs/heads/{name}",
     ]
     for ref in refs_to_try:
-        if data.get_ref(ref):
-            return data.get_ref(ref)
+        if data.get_ref(ref, deref=False).value:
+            return data.get_ref(ref).value
 
     # Name is SHA1
     if len(name) == 40 and all(c in string.hexdigits for c in name):

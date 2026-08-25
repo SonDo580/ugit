@@ -119,10 +119,11 @@ def k(args: argparse.Namespace):
     dot = "digraph commits {\n"
 
     oids: set[str] = set()  # multiple refs can point to the same commit
-    for refname, ref in data.iter_refs():
+    for refname, ref in data.iter_refs(deref=False):
         dot += f'"{refname}" [shape=note]\n'
-        dot += f'"{refname}" -> "{ref}"\n'
-        oids.add(ref)
+        dot += f'"{refname}" -> "{ref.value}"\n'
+        if not ref.symbolic:
+            oids.add(ref.value)
 
     for oid in base.iter_commits_and_parent(oids):
         commit = base.get_commit(oid)
