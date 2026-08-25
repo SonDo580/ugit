@@ -1,4 +1,4 @@
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Literal
 from typing_extensions import Unpack
 from collections import defaultdict
 from tempfile import NamedTemporaryFile
@@ -19,6 +19,20 @@ def compare_trees(
 
     for path, oids in entries.items():
         yield path, *oids
+
+
+ActionType = Literal["new file", "deleted", "modified"]
+
+
+def iter_changed_files(
+    t_from: dict[str, str], t_to: dict[str, str]
+) -> Iterator[tuple[str, ActionType]]:
+    for path, o_from, o_to in compare_trees(t_from, t_to):
+        if o_from != o_to:
+            action: ActionType = (
+                "new file" if not o_from else ("deleted" if not o_to else "modified")
+            )
+            yield path, action
 
 
 def diff_trees(t_from: dict[str, str], t_to: dict[str, str]) -> bytes:
