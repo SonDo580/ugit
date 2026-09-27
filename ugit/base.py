@@ -232,6 +232,8 @@ def get_commit(oid: str) -> Commit:
 
 
 def iter_commits_and_parent(oids: set[str]) -> Iterator[str]:
+    # Must yield the oid before accessing it (to allow caller to fetch it if needed)
+
     stack = list(oids)
     visited: set[str] = set()
 
@@ -246,6 +248,31 @@ def iter_commits_and_parent(oids: set[str]) -> Iterator[str]:
         commit = get_commit(oid)
         for parent in reversed(commit.parents):
             stack.append(parent)
+
+
+def iter_objects_in_commit(oids: list[str]):
+    # Must yield the oid before accessing it (to allow caller to fetch it if needed)
+
+    visited: set[str] = set()
+
+    def iter_objects_in_tree(oid: str):
+        visited.add(oid)
+        yield oid
+
+        for type_, oid, _ in _iter_tree_entries(oid):
+            if oid not in visited:
+                if type_ == "tree":
+                    yield from iter_objects_in_tree(oid)
+                else:
+                    visited.add(oid)
+                    yield oid
+
+    for oid in iter_commits_and_parent(oids):
+        yield oid
+
+        commit = get_commit(oid)
+        if commit.tree not in visited:
+            yield from iter_objects_in_tree(commit.tree)
 
 
 def get_oid(name: str) -> str:
