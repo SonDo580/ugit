@@ -1,5 +1,6 @@
 import hashlib
 import os
+import json
 import shutil
 from contextlib import contextmanager
 from typing import Literal, Optional, Iterator, NamedTuple
@@ -80,10 +81,23 @@ def iter_refs(prefix: str = "", deref: bool = True) -> Iterator[tuple[str, RefVa
             yield refname, ref
 
 
+@contextmanager
+def get_index():
+    index: dict[str, str] = {}
+    if os.path.isfile(f"{GIT_DIR}/index"):
+        with open(f"{GIT_DIR}/index") as f:
+            index = json.load(f)
+
+    yield index
+
+    with open(f"{GIT_DIR}/index", "w") as f:
+        json.dump(index, f)
+
+
 ObjectType = Literal["blob", "tree", "commit"]
 
 
-def hash_object(data: bytes, type_: ObjectType) -> str:
+def hash_object(data: bytes, type_: ObjectType = "blob") -> str:
     obj = type_.encode() + b"\x00" + data
     oid = hashlib.sha1(obj).hexdigest()
     with open(f"{GIT_DIR}/objects/{oid}", "wb") as out:

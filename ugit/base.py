@@ -301,5 +301,30 @@ def get_oid(name: str) -> str:
     assert False, f"Unknown name '{name}'"
 
 
+def add(filenames: list[str]):
+    def add_file(index: dict[str, str], filename: str):
+        # Normalize path
+        filename = os.path.relpath(filename)
+        with open(filename, "rb") as f:
+            oid = data.hash_object(f.read())
+        index[filename] = oid
+
+    def add_directory(index: dict[str, str], dirname: str):
+        for root, _, filenames in os.walk(dirname):
+            for filename in filenames:
+                # Normalize path
+                path = os.path.relpath(f"{root}/{filename}")
+                if is_ignored(path) or not os.path.isfile(path):
+                    continue  # nested files listed by os.walk()
+                add_file(index, path)
+
+    with data.get_index() as index:
+        for name in filenames:
+            if os.path.isfile(name):
+                add_file(index, name)
+            elif os.path.isdir(name):
+                add_directory(index, name)
+
+
 def is_ignored(path: str) -> bool:
     return ".ugit" in path.split("/")
