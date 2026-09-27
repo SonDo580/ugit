@@ -57,7 +57,8 @@ def parse_args() -> argparse.Namespace:
 
     diff_parser = commands.add_parser("diff")
     diff_parser.set_defaults(func=_diff)
-    diff_parser.add_argument("commit", default="@", type=oid, nargs="?")
+    diff_parser.add_argument("--cached", action="store_true")
+    diff_parser.add_argument("commit", nargs="?")
 
     checkout_parser = commands.add_parser("checkout")
     checkout_parser.set_defaults(func=checkout)
@@ -167,8 +168,32 @@ def show(args):
 
 
 def _diff(args):
-    tree = base.get_commit(args.commit).tree
-    result = diff.diff_trees(base.get_tree(tree), base.get_working_tree())
+    """
+    - If no arguments are provided,
+      diff from index to working directory
+      (see unstaged changes).
+    - If '--cached' is provided and commit is not provided,
+      diff from HEAD to index
+      (see changes to be committed).
+    - If commit is provided, diff from commit to index or working directory
+      depending on whether '--cached' is provided.
+    """
+    oid = args.commit and base.get_oid(args.commit)
+
+    if args.commit:
+        tree_from = base.get_tree(oid and base.get_commit(oid).tree)
+
+    if args.cached:
+        tree_to = base.get_index_tree()
+        if not args.commit:
+            oid = base.get_oid("@")  # diff from HEAD
+            tree_from = base.get_tree(oid and base.get_commit(oid).tree)
+    else:
+        tree_to = base.get_working_tree()
+        if not args.commit:
+            tree_from = base.get_index_tree()
+
+    result = diff.diff_trees(tree_from, tree_to)
     sys.stdout.flush()
     sys.stdout.buffer.write(result)
 
