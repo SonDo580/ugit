@@ -9,8 +9,10 @@ https://www.leshenko.net/p/ugit/
 ## Setup
 
 ```bash
-# Install 'ugit' as an editable package
-pip install -e . --user
+# Install 'uv'
+
+# Install 'ugit' globally as an editable CLI tool
+uv tool install --editable .
 
 # Install 'graphviz'
 # (example on Ubuntu)

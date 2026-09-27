@@ -67,3 +67,43 @@ def diff_blobs(o_from: Optional[str], o_to: Optional[str], path: str = "blob") -
             output, _ = proc.communicate()
 
         return output
+
+
+def merge_trees(
+    t_base: dict[str, str], t_HEAD: dict[str, str], t_other: dict[str, str]
+) -> dict[str, str]:
+    tree: dict[str, str] = {}
+    for path, o_base, o_HEAD, o_other in compare_trees(t_base, t_HEAD, t_other):
+        tree[path] = merge_blobs(o_base, o_HEAD, o_other)
+    return tree
+
+
+def merge_blobs(
+    o_base: Optional[str], o_HEAD: Optional[str], o_other: Optional[str]
+) -> str:
+    with NamedTemporaryFile() as f_base, NamedTemporaryFile() as f_HEAD, NamedTemporaryFile() as f_other:
+        for oid, f in [(o_base, f_base), (o_HEAD, f_HEAD), (o_other, f_other)]:
+            if oid:
+                f.write(data.get_object(oid))
+                f.flush()
+
+        with subprocess.Popen(
+            [
+                "diff3",
+                "-m",
+                "-L",
+                "HEAD",
+                f_HEAD.name,
+                "-L",
+                "BASE",
+                f_base.name,
+                "-L",
+                "MERGE_HEAD",
+                f_other.name,
+            ],
+            stdout=subprocess.PIPE,
+        ) as proc:
+            output, _ = proc.communicate()
+            assert proc.returncode in (0, 1)
+
+        return output

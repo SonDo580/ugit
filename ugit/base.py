@@ -5,6 +5,7 @@ import operator
 import string
 
 from . import data
+from . import diff
 
 
 def init():
@@ -71,9 +72,10 @@ def get_working_tree() -> dict[str, str]:
             path = os.path.relpath(f"{root}/{filename}")
             if is_ignored(path) or not os.path.isfile(path):
                 continue
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 result[path] = data.hash_object(f.read(), "blob")
     return result
+
 
 def _empty_current_directory():
     for root, dirnames, filenames in os.walk(".", topdown=False):
@@ -98,7 +100,17 @@ def read_tree(tree_oid: str):
     for path, oid in get_tree(tree_oid, base_path="./").items():
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as f:
-            f.write(data.get_object(oid, expected="blob"))
+            f.write(data.get_object(oid))
+
+
+def read_tree_merged(t_base: str, t_HEAD: str, t_other: str):
+    _empty_current_directory()
+    for path, blob in diff.merge_trees(
+        get_tree(t_base), get_tree(t_HEAD), get_tree(t_other)
+    ).items():
+        os.makedirs(f"./{os.path.dirname(path)}", exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(blob)
 
 
 def commit(message: str) -> str:
@@ -107,6 +119,11 @@ def commit(message: str) -> str:
     HEAD = data.get_ref("HEAD").value
     if HEAD:
         commit += f"parent {HEAD}\n"
+
+    MERGE_HEAD = data.get_ref("MERGE_HEAD").value
+    if MERGE_HEAD:
+        commit += f"parent {MERGE_HEAD}\n"
+        data.delete_ref("MERGE_HEAD", deref=False)
 
     commit += "\n"
     commit += f"{message}\n"
@@ -131,6 +148,35 @@ def checkout(name: str):
 
 def reset(oid: str):
     data.update_ref("HEAD", data.RefValue(symbolic=False, value=oid))
+
+
+def merge(other: str):
+    HEAD = data.get_ref("HEAD").value
+    assert HEAD
+    merge_base = get_merge_base(other, HEAD)
+    c_other = get_commit(other)
+
+    # Handle fast-forward merge
+    if merge_base == HEAD:
+        read_tree(c_other.tree)
+        data.update_ref("HEAD", data.RefValue(symbolic=False, value=other))
+        print("Fast-forward merge, no need to commit")
+        return
+
+    data.update_ref("MERGE_HEAD", data.RefValue(symbolic=False, value=other))
+
+    c_base = get_commit(merge_base)
+    c_HEAD = get_commit(HEAD)
+    read_tree_merged(c_base.tree, c_HEAD.tree, c_other.tree)
+    print("Merged in working tree\nPlease commit")
+
+
+def get_merge_base(oid1: str, oid2: str) -> str:
+    """Find lowest common ancestor of 2 commits."""
+    parents1 = set(iter_commits_and_parent({oid1}))
+    for oid in iter_commits_and_parent({oid2}):
+        if oid in parents1:
+            return oid
 
 
 def create_tag(name: str, oid: str):
@@ -161,12 +207,12 @@ def get_branch_name() -> Optional[str]:
 
 class Commit(NamedTuple):
     tree: str
-    parent: Optional[str]
+    parents: list[str]
     message: str
 
 
 def get_commit(oid: str) -> Commit:
-    parent: Optional[str] = None
+    parents: list[str] = []
     commit = data.get_object(oid, "commit").decode()
     lines = iter(commit.splitlines())
 
@@ -176,13 +222,13 @@ def get_commit(oid: str) -> Commit:
         if key == "tree":
             tree = value
         elif key == "parent":
-            parent = value
+            parents.append(value)
         else:
             assert False, f"Unknown field {key}"
 
     message = "\n".join(lines)  # remaining lines
     assert isinstance(tree, str)
-    return Commit(tree=tree, parent=parent, message=message)
+    return Commit(tree=tree, parents=parents, message=message)
 
 
 def iter_commits_and_parent(oids: set[str]) -> Iterator[str]:
@@ -198,8 +244,8 @@ def iter_commits_and_parent(oids: set[str]) -> Iterator[str]:
         yield oid
 
         commit = get_commit(oid)
-        if commit.parent:
-            stack.append(commit.parent)
+        for parent in reversed(commit.parents):
+            stack.append(parent)
 
 
 def get_oid(name: str) -> str:

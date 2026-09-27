@@ -34,6 +34,11 @@ def get_ref(ref: str, deref: bool = True) -> RefValue:
     return _get_ref_internal(ref, deref)[1]
 
 
+def delete_ref(ref: str, deref: bool = True):
+    ref = _get_ref_internal(ref, deref)[0]
+    os.remove(f"{GIT_DIR}/{ref}")
+
+
 def _get_ref_internal(ref: str, deref: bool) -> tuple[str, RefValue]:
     ref_path = f"{GIT_DIR}/{ref}"
     value: Optional[str] = None
@@ -51,7 +56,7 @@ def _get_ref_internal(ref: str, deref: bool) -> tuple[str, RefValue]:
 
 
 def iter_refs(prefix: str = "", deref: bool = True) -> Iterator[tuple[str, RefValue]]:
-    refs = ["HEAD"]
+    refs = ["HEAD", "MERGE_HEAD"]
     for root, _, filenames in os.walk(f"{GIT_DIR}/refs/"):
         root = os.path.relpath(root, GIT_DIR)
         refs.extend(f"{root}/{name}" for name in filenames)
@@ -59,7 +64,9 @@ def iter_refs(prefix: str = "", deref: bool = True) -> Iterator[tuple[str, RefVa
     for refname in refs:
         if not refname.startswith(prefix):
             continue
-        yield refname, get_ref(refname, deref)
+        ref = get_ref(refname, deref)
+        if ref.value:
+            yield refname, ref
 
 
 ObjectType = Literal["blob", "tree", "commit"]
@@ -73,7 +80,7 @@ def hash_object(data: bytes, type_: ObjectType) -> str:
     return oid
 
 
-def get_object(oid: str, expected: Optional[ObjectType]) -> bytes:
+def get_object(oid: str, expected: Optional[ObjectType] = "blob") -> bytes:
     with open(f"{GIT_DIR}/objects/{oid}", "rb") as f:
         obj = f.read()
 
