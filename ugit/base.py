@@ -173,8 +173,8 @@ def merge(other: str):
 
 def get_merge_base(oid1: str, oid2: str) -> str:
     """Find lowest common ancestor of 2 commits."""
-    parents1 = set(iter_commits_and_parent({oid1}))
-    for oid in iter_commits_and_parent({oid2}):
+    parents1 = set(iter_commits_and_parents({oid1}))
+    for oid in iter_commits_and_parents({oid2}):
         if oid in parents1:
             return oid
 
@@ -231,7 +231,7 @@ def get_commit(oid: str) -> Commit:
     return Commit(tree=tree, parents=parents, message=message)
 
 
-def iter_commits_and_parent(oids: set[str]) -> Iterator[str]:
+def iter_commits_and_parents(oids: set[str]) -> Iterator[str]:
     # Must yield the oid before accessing it (to allow caller to fetch it if needed)
 
     stack = list(oids)
@@ -250,7 +250,7 @@ def iter_commits_and_parent(oids: set[str]) -> Iterator[str]:
             stack.append(parent)
 
 
-def iter_objects_in_commit(oids: list[str]):
+def iter_objects_in_commits(oids: set[str]):
     # Must yield the oid before accessing it (to allow caller to fetch it if needed)
 
     visited: set[str] = set()
@@ -267,7 +267,7 @@ def iter_objects_in_commit(oids: list[str]):
                     visited.add(oid)
                     yield oid
 
-    for oid in iter_commits_and_parent(oids):
+    for oid in iter_commits_and_parents(oids):
         yield oid
 
         commit = get_commit(oid)

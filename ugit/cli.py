@@ -96,6 +96,11 @@ def parse_args() -> argparse.Namespace:
     fetch_parser.set_defaults(func=fetch)
     fetch_parser.add_argument("remote")
 
+    push_parser = commands.add_parser("push")
+    push_parser.set_defaults(func=push)
+    push_parser.add_argument("remote")
+    push_parser.add_argument("branch")
+
     return parser.parse_args()
 
 
@@ -138,7 +143,7 @@ def log(args):
     for refname, ref in data.iter_refs():
         refs.setdefault(ref.value, []).append(refname)
 
-    for oid in base.iter_commits_and_parent({args.oid}):
+    for oid in base.iter_commits_and_parents({args.oid}):
         commit = base.get_commit(oid)
         _print_commit(oid, commit, refs.get(oid))
 
@@ -193,7 +198,7 @@ def k(args):
         if not ref.symbolic:
             oids.add(ref.value)
 
-    for oid in base.iter_commits_and_parent(oids):
+    for oid in base.iter_commits_and_parents(oids):
         commit = base.get_commit(oid)
         dot += f'"{oid}" [shape=box, style=filled label="{oid[:10]}"]\n'
         for parent in commit.parents:
@@ -242,3 +247,7 @@ def merge_base(args):
 
 def fetch(args):
     remote.fetch(args.remote)
+
+
+def push(args):
+    remote.push(args.remote, f"refs/heads/{args.branch}")
